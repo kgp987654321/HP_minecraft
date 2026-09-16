@@ -18,7 +18,7 @@
   <div class="mining" id="mining"><div></div></div>
   <div class="toast" id="toast"></div>
   <div class="hotbar" id="hotbar"></div>
-  <div class="help panel">WASD move · Mouse look · Space jump · Hold left-click mine · Right-click place · 1–6 hotbar · E craft · C coordinate hint</div>
+  <div class="help panel">WASD move · Mouse look · Space jump · Hold left-click mine · <b>F place block</b> · Right-click also places · 1–6 hotbar · E craft · C coordinate hint</div>
 </div>
 
 <div class="craft" id="craft">
@@ -70,6 +70,21 @@
         }
       }catch(e){}
       location.reload();
+    });
+
+    document.addEventListener('keydown',(e)=>{
+      if(e.code!=='KeyF' || e.repeat) return;
+      const canvas=document.querySelector('#game canvas');
+      if(!canvas || document.pointerLockElement!==canvas) return;
+      e.preventDefault();
+      canvas.dispatchEvent(new MouseEvent('mousedown',{
+        bubbles:true,
+        cancelable:true,
+        button:2,
+        buttons:2,
+        clientX:window.innerWidth/2,
+        clientY:window.innerHeight/2
+      }));
     });
   });
 })();
