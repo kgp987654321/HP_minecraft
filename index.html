@@ -14,6 +14,7 @@
     <div class="panel"><div class="title">HP Minecraft</div><div class="small">Survival learning world · Seed <span class="seed" id="seed"></span></div></div>
     <div class="panel status" id="coords">X 0 · Y 0 · Z 0</div>
   </div>
+  <div class="rescue-wrap"><button class="btn rescue-btn" id="rescueBtn">🛟 Get Unstuck</button></div>
   <div class="mining" id="mining"><div></div></div>
   <div class="toast" id="toast"></div>
   <div class="hotbar" id="hotbar"></div>
@@ -41,6 +42,38 @@
   </div>
 </div>
 
+<script>
+(() => {
+  const SAVE_KEY='hp_minecraft_v3_save';
+  const nativeSet=Storage.prototype.setItem;
+  let rescuePending=false;
+  Storage.prototype.setItem=function(k,v){
+    if(k===SAVE_KEY && rescuePending){
+      try{
+        const data=JSON.parse(v);
+        if(Array.isArray(data.pos)) data.pos[1]=30;
+        v=JSON.stringify(data);
+      }catch(e){}
+    }
+    return nativeSet.call(this,k,v);
+  };
+  window.addEventListener('DOMContentLoaded',()=>{
+    const btn=document.getElementById('rescueBtn');
+    btn.addEventListener('click',()=>{
+      rescuePending=true;
+      try{
+        const raw=localStorage.getItem(SAVE_KEY);
+        if(raw){
+          const data=JSON.parse(raw);
+          if(Array.isArray(data.pos)) data.pos[1]=30;
+          nativeSet.call(localStorage,SAVE_KEY,JSON.stringify(data));
+        }
+      }catch(e){}
+      location.reload();
+    });
+  });
+})();
+</script>
 <script type="module" src="game.js"></script>
 </body>
 </html>
