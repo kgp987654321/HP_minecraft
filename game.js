@@ -52,7 +52,6 @@ function caveAt(x,y,z){if(y<3)return false;const h=heightAt(x,z);if(y>h-2)return
 function oreAt(x,y,z){const r=hash(x,y,z);if(y<5&&r<.015)return 'diamond';if(y<7&&r<.022)return 'emerald';if(y<8&&r<.045)return 'gold';if(y<11&&r<.07)return 'iron';if(y<13&&r<.09)return 'copper';if(y<15&&r<.12)return 'coal';return 'stone'}
 function treeAt(x,z){const h=heightAt(x,z);return h>8&&hash(x,77,z)>.965}
 function key(x,y,z){return `${x},${y},${z}`}
-function parseKey(k){return k.split(',').map(Number)}
 function editValue(x,y,z){const k=key(x,y,z);return edits.has(k)?edits.get(k):undefined}
 function baseBlockAt(x,y,z){if(y<=0)return 'bedrock';const h=heightAt(x,z);
  if(treeAt(x,z)){
@@ -85,7 +84,7 @@ function targetBlock(){ray.setFromCamera(new THREE.Vector2(0,0),camera);const hi
 function currentTool(){return hotbar[selected].id}
 function speedFor(type){const tool=currentTool();let s=1;if(tool==='woodPick'&&inventory.woodPick>0)s=2.2;if(tool==='stonePick'&&inventory.stonePick>0)s=3.4;if(['dirt','grass','log','leaves'].includes(type))s*=1.6;if(['gold','diamond','emerald'].includes(type)&&tool!=='stonePick')s*=.28;return s}
 function breakBlock(hit){const {x,y,z,type}=hit.object.userData;if(type==='bedrock')return;edits.set(key(x,y,z),null);const drop=blockInfo[type].drop===undefined?type:blockInfo[type].drop;if(drop&&inventory[drop]!==undefined)inventory[drop]++;refreshAround(x,y,z);if(lessons[type])educate(type,x,y,z);renderHotbar();saveSoon()}
-function placeBlock(){const hit=targetBlock();if(!hit)return;const slot=hotbar[selected];if(!slot.place||!inventory[slot.id])return;const n=hit.face.normal;const x=hit.object.userData.x+Math.round(n.x),y=hit.object.userData.y+Math.round(n.y),z=hit.object.userData.z+Math.round(n.z);const test=new THREE.Vector3(x+.5,y+.5,z+.5);if(test.distanceTo(player.pos)<1.35)return;edits.set(key(x,y,z),slot.id);inventory[slot.id]--;placedCount++;refreshAround(x,y,z);renderHotbar();if(placedCount===12)softToast('Engineering idea','You have placed 12 blocks. Wide spans need support: triangles, arches and columns help structures carry loads.');saveSoon()}
+function placeBlock(){const hit=targetBlock();if(!hit){softToast('Aim at a block','Point the crosshair at the face of a nearby block, then press F.');return}const slot=hotbar[selected];if(!slot.place){softToast('Select a block','Use keys 1–4 to select Dirt, Stone, Log or Planks before placing.');return}if(!inventory[slot.id]){softToast('No blocks available',`Mine or craft some ${slot.name.toLowerCase()} first.`);return}const n=hit.face.normal;const x=hit.object.userData.x+Math.round(n.x),y=hit.object.userData.y+Math.round(n.y),z=hit.object.userData.z+Math.round(n.z);const test=new THREE.Vector3(x+.5,y+.5,z+.5);if(test.distanceTo(player.pos)<1.35){softToast('Too close','Step back a little so the new block is not inside your character.');return}edits.set(key(x,y,z),slot.id);inventory[slot.id]--;placedCount++;refreshAround(x,y,z);renderHotbar();softToast('Block placed',`${slot.name} placed.`);if(placedCount===12)softToast('Engineering idea','You have placed 12 blocks. Wide spans need support: triangles, arches and columns help structures carry loads.');saveSoon()}
 
 function educate(type,x,y,z){const l=lessons[type];if(!l)return;const first=!discoveries.has(type);if(first){discoveries.add(type);showLesson(l,x,y,z);saveSoon();return}if(performance.now()-lastToast>45000&&Math.random()<.28){softToast(`${type[0].toUpperCase()+type.slice(1)} reminder`,l.game);lastToast=performance.now()}}
 function showLesson(l,x,y,z){locked=false;document.exitPointerLock?.();ui.overlayTitle.textContent=l.title;ui.overlayBody.innerHTML=`<p><b>In-game tip:</b> ${l.game}</p><div class="learn"><b>Learning connection:</b> ${l.learn}</div><div class="fact"><b>Real-world fact:</b> ${l.fact}</div><p class="small">Found near X ${x}, Y ${y}, Z ${z}</p>`;ui.overlay.classList.remove('hidden')}
@@ -107,7 +106,14 @@ function newWorld(){localStorage.removeItem(SAVE_KEY);edits.clear();discoveries.
 renderer.domElement.addEventListener('click',()=>{if(!locked&&ui.overlay.classList.contains('hidden')&&!ui.craft.classList.contains('show'))renderer.domElement.requestPointerLock()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===renderer.domElement;if(!locked)mining=false});
 document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0023;pitch-=e.movementY*.0023;pitch=Math.max(-1.52,Math.min(1.52,pitch))});
-document.addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='Space')e.preventDefault();if(e.code.startsWith('Digit')){const n=Number(e.code.slice(5))-1;if(n>=0&&n<hotbar.length){selected=n;renderHotbar()}}if(e.code==='KeyE'){ui.craft.classList.toggle('show');if(ui.craft.classList.contains('show'))document.exitPointerLock?.()}if(e.code==='KeyC')softToast('Coordinates',`X ${Math.floor(player.pos.x)}, Y ${Math.floor(player.pos.y)}, Z ${Math.floor(player.pos.z)}. Y measures height.`)});
+document.addEventListener('keydown',e=>{
+ keys.add(e.code);
+ if(e.code==='Space') e.preventDefault();
+ if(e.code.startsWith('Digit')){const n=Number(e.code.slice(5))-1;if(n>=0&&n<hotbar.length){selected=n;renderHotbar()}}
+ if(e.code==='KeyE'){ui.craft.classList.toggle('show');if(ui.craft.classList.contains('show'))document.exitPointerLock?.()}
+ if(e.code==='KeyC')softToast('Coordinates',`X ${Math.floor(player.pos.x)}, Y ${Math.floor(player.pos.y)}, Z ${Math.floor(player.pos.z)}. Y measures height.`);
+ if(e.code==='KeyF'&&!e.repeat&&locked){e.preventDefault();placeBlock()}
+});
 document.addEventListener('keyup',e=>keys.delete(e.code));
 renderer.domElement.addEventListener('mousedown',e=>{if(!locked)return;if(e.button===0){mining=true;miningProgress=0;miningKey=''}if(e.button===2)placeBlock()});
 document.addEventListener('mouseup',e=>{if(e.button===0){mining=false;miningProgress=0;ui.mining.style.display='none'}});renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
@@ -115,9 +121,19 @@ ui.continueBtn.addEventListener('click',()=>{ui.overlay.classList.add('hidden');
 ui.newBtn.addEventListener('click',()=>{newWorld();ui.overlay.classList.add('hidden');renderer.domElement.requestPointerLock()});
 document.querySelectorAll('[data-craft]').forEach(b=>b.addEventListener('click',()=>craft(b.dataset.craft)));
 
-function update(dt){camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;const forward=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,Math.sin(yaw)),wish=new THREE.Vector3();if(keys.has('KeyW'))wish.add(forward);if(keys.has('KeyS'))wish.sub(forward);if(keys.has('KeyD'))wish.add(right);if(keys.has('KeyA'))wish.sub(right);if(wish.lengthSq())wish.normalize();const speed=4.8;moveAxis('x',wish.x*speed*dt);moveAxis('z',wish.z*speed*dt);player.onGround=false;player.vel.y-=18*dt;if(keys.has('Space')&&Math.abs(player.vel.y)<.05){const below=player.pos.clone();below.y-=.08;if(collidesAt(below))player.vel.y=7.1}moveAxis('y',player.vel.y*dt);if(player.pos.y<-10)respawn();camera.position.copy(player.pos);camera.position.y+=.05;streamChunks();ui.coords.textContent=`X ${Math.floor(player.pos.x)} · Y ${Math.floor(player.pos.y)} · Z ${Math.floor(player.pos.z)}`;
+function update(dt){
+ camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
+ const forward=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,Math.sin(yaw)),wish=new THREE.Vector3();
+ if(keys.has('KeyW'))wish.add(forward);if(keys.has('KeyS'))wish.sub(forward);if(keys.has('KeyD'))wish.add(right);if(keys.has('KeyA'))wish.sub(right);if(wish.lengthSq())wish.normalize();
+ const speed=4.8;moveAxis('x',wish.x*speed*dt);moveAxis('z',wish.z*speed*dt);
+ const below=player.pos.clone();below.y-=.10;player.onGround=collidesAt(below);
+ if(keys.has('Space')&&player.onGround){player.vel.y=7.1;player.onGround=false}else{player.vel.y-=18*dt}
+ moveAxis('y',player.vel.y*dt);
+ if(player.pos.y<-10)respawn();
+ camera.position.copy(player.pos);camera.position.y+=.05;streamChunks();ui.coords.textContent=`X ${Math.floor(player.pos.x)} · Y ${Math.floor(player.pos.y)} · Z ${Math.floor(player.pos.z)}`;
  if(!travelStart)travelStart=player.pos.clone();if(!discoveries.has('coordinates')&&player.pos.distanceTo(travelStart)>32){discoveries.add('coordinates');softToast('Coordinate lesson','You traveled more than 32 blocks. X and Z measure horizontal position while Y measures height. Coordinates let you return to exact places.');saveSoon()}
- if(mining&&locked){const hit=targetBlock();if(hit&&hit.object.userData.type!=='bedrock'){const k=hit.object.userData.key;if(k!==miningKey){miningKey=k;miningProgress=0}miningProgress+=dt*speedFor(hit.object.userData.type)/blockInfo[hit.object.userData.type].hard;ui.mining.style.display='block';ui.miningFill.style.width=Math.min(100,miningProgress*100)+'%';if(miningProgress>=1){breakBlock(hit);miningProgress=0;miningKey=''}}else{miningProgress=0;miningKey='';ui.mining.style.display='none'}}else ui.mining.style.display='none';}
+ if(mining&&locked){const hit=targetBlock();if(hit&&hit.object.userData.type!=='bedrock'){const k=hit.object.userData.key;if(k!==miningKey){miningKey=k;miningProgress=0}miningProgress+=dt*speedFor(hit.object.userData.type)/blockInfo[hit.object.userData.type].hard;ui.mining.style.display='block';ui.miningFill.style.width=Math.min(100,miningProgress*100)+'%';if(miningProgress>=1){breakBlock(hit);miningProgress=0;miningKey=''}}else{miningProgress=0;miningKey='';ui.mining.style.display='none'}}else ui.mining.style.display='none';
+}
 
 function loop(now){const dt=Math.min(.04,(now-lastTime)/1000);lastTime=now;update(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
@@ -125,5 +141,5 @@ window.addEventListener('beforeunload',save);
 
 const hadSave=load();if(!hadSave){seed=Math.floor(Math.random()*1e9);player.pos.set(.5,heightAt(0,0)+3,.5)}travelStart=player.pos.clone();ui.seed.textContent=seed;streamChunks();renderHotbar();
 ui.overlayTitle.textContent=hadSave?'Welcome back to HP Minecraft':'HP Minecraft — 3D Survival';
-ui.overlayBody.innerHTML=hadSave?'<p>Your saved world is ready.</p><p><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Hold left-click</b> mine · <b>Right-click</b> place · <b>1–6</b> hotbar · <b>E</b> crafting · <b>C</b> coordinate hint.</p>':'<p>This version is now a first-person 3D survival world.</p><p><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Hold left-click</b> mine · <b>Right-click</b> place · <b>1–6</b> hotbar · <b>E</b> crafting.</p><p>Discoveries teach geology, engineering, coordinates, ratios, biology and electricity without stopping you constantly.</p>';
+ui.overlayBody.innerHTML=hadSave?'<p>Your saved world is ready.</p><p><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Hold left-click</b> mine · <b>F</b> place block · <b>1–6</b> hotbar · <b>E</b> crafting · <b>C</b> coordinate hint.</p>':'<p>This version is now a first-person 3D survival world.</p><p><b>WASD</b> move · <b>Mouse</b> look · <b>Space</b> jump · <b>Hold left-click</b> mine · <b>F</b> place block · <b>1–6</b> hotbar · <b>E</b> crafting.</p><p>Discoveries teach geology, engineering, coordinates, ratios, biology and electricity without stopping you constantly.</p>';
 requestAnimationFrame(loop);
