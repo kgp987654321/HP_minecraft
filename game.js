@@ -32,7 +32,7 @@ const hotbar=[
 
 const blockInfo={
  grass:{color:'#5f9e45',hard:0.45,drop:'dirt'}, dirt:{color:'#76533b',hard:0.45}, stone:{color:'#777b7e',hard:1.5},
- log:{color:'#7a542f',hard:1.0}, leaves:{color:'#477d3b',hard:.25,drop:null}, coal:{color:'#3f4346',hard:1.6}, iron:{color:'#9d816b',hard:1.9}, copper:{color:'#b86f48',hard:1.7}, gold:{color:'#caa837',hard:2.1}, diamond:{color:'#3bcbd0',hard:2.4}, emerald:{color:'#39ac62',hard:2.4}, bedrock:{color:'#303236',hard:999,drop:null}
+ log:{color:'#6f43a8',hard:1.0}, leaves:{color:'#a965ff',hard:.25,drop:null}, coal:{color:'#3f4346',hard:1.6}, iron:{color:'#9d816b',hard:1.9}, copper:{color:'#b86f48',hard:1.7}, gold:{color:'#caa837',hard:2.1}, diamond:{color:'#3bcbd0',hard:2.4}, emerald:{color:'#39ac62',hard:2.4}, bedrock:{color:'#303236',hard:999,drop:null}
 };
 
 const lessons={
